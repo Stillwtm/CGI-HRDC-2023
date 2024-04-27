@@ -1,4 +1,4 @@
-name: myenv
+name: CGI-HRDC-2023
 channels:
   - pytorch
   - nvidia
