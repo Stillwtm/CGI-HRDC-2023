@@ -167,4 +167,4 @@ models/
 *.zip
 test.csv
 
-dataset/
+dataset/*

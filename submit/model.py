@@ -26,9 +26,8 @@ class model:
         :param dir_path: path to the submission directory (for internal use only).
         :return:
         """
-        model_names = ["resnet18", "resnet34", "efficientnet", "densenet", "convnext"]
         self.models = []
-        for model_name in model_names:
+        for model_name in MODELS_TO_ENSEMBLE:
             model_path = os.path.join(dir_path, "models", f"{model_name}.pth")
             model = TwoHeadModel(model_name=model_name, num_classes=2)
             model.load_state_dict(torch.load(model_path, map_location=self.device))
@@ -36,15 +35,6 @@ class model:
             self.models.append(model)
         
         self.ensemble = VoteEnsemble(self.models)
-
-        # self.models = [
-        #     create_model(model_name, pretrained=False, num_classes=2).to(self.device)
-        #     for model_name in model_names
-        # ]
-        # checkpoint_path = os.path.join(dir_path, "model_weights.pth")
-        # self.model.load_state_dict(torch.load(checkpoint_path, map_location=self.device))
-        # self.model.to(self.device)
-        # self.model.eval()
 
     def predict(self, input_image):
         """
@@ -55,9 +45,6 @@ class model:
         :return: an int value indicating the class for the input image
         """
         image = preprocess_image(input_image)
-        # image = cv2.resize(image, (512, 512), interpolation=cv2.INTER_LINEAR)
-        # image = image / 255.0
-        # image = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
         transform = transforms.Compose([
             transforms.Resize((512, 512)),
             transforms.ToTensor(),
@@ -162,7 +149,7 @@ class VoteEnsemble():
         self.models = models
 
     @torch.no_grad()
-    def predict(self, x, task="task1"):
+    def predict(self, x, task):
         if task == "task1":
             outs = [model.predict_task1(x) for model in self.models]
         elif task == "task2":

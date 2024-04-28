@@ -1,30 +1,20 @@
 import os
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.multiprocessing as mp
 from torch.utils.tensorboard import SummaryWriter
 import argparse
-from torchvision.models import resnet
 
-from submit.model import create_model, TwoHeadModel
+from submit.model import TwoHeadModel
 from dataloader import create_dataloader
 from metric import classification_metrics
 
-# TODO: hyperparameter
-EPOCH_NUM = 50
+# Hyperparameter
+EPOCH_NUM = 60
 BATCH_SIZE = 64
-# VAL_BATCH_SIZE = 64
 lr = 5e-5
-weight_decay = 1e-5
-
-
-def load_weights(model, save_dir: str, epoch: int, device):
-    weight_file = os.path.join(save_dir, f"epoch_{epoch}.pth")
-    state_dict = torch.load(weight_file, map_location=device)
-    state_dict = {k[len("module."):]: v for k, v in state_dict.items() if k.startswith("module.")}
-    model.load_state_dict(state_dict)
+weight_decay = 1e-4
 
 
 def save_weights(model, save_dir: str, epoch: int):
@@ -36,33 +26,25 @@ def main():
     parser.add_argument("-m", "--model", type=str, choices=["resnet18", "resnet34", "resnet50", "efficientnet", "densenet", "convnext", "vit"], default="resnet34")
     parser.add_argument("-s", "--img-size", type=int, default=512)
     parser.add_argument("-b", "--batch-size", type=int, default=BATCH_SIZE)
+    parser.add_argument("-f", "--full-data", action="store_true", default=False)
     args = parser.parse_args()
 
     torch.cuda.set_device(0)
     device = torch.device("cuda", 0)
     
-    log_dir = f"output/{args.model}_{args.img_size}_twohead"
+    log_dir = f"output/{args.model}_{args.img_size}_{args.full_data}"
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     training_log = open(os.path.join(log_dir, "training.log"), "w")
 
     writer = SummaryWriter(log_dir)
 
-    # model = ResNet(model=args.model, pretrained=True)
-    # backbone = torch.load(f"pretrainedModel/resnet{args.resnet}.pth")
-    # backbone = resnet.resnet34(pretrained=True)
-    # features = model.backbone.fc.in_features
-    # backbone.fc = nn.Linear(features, 1)
-    # model.backbone = backbone
-
-    # backbone = create_model(args.model, pretrained=True, num_classes=2)
     model = TwoHeadModel(model_name=args.model)
     model.to(device)
     
-    # criterion = torch.nn.BCELoss()
     criterion = torch.nn.CrossEntropyLoss()
-    train_loader1, val_loader1 = create_dataloader(args.batch_size, args.batch_size, img_size=args.img_size, use_full_data=False, task="task1")
-    train_loader2, val_loader2 = create_dataloader(args.batch_size, args.batch_size, img_size=args.img_size, use_full_data=False, task="task2")
+    train_loader1, val_loader1 = create_dataloader(args.batch_size, args.batch_size, img_size=args.img_size, use_full_data=args.full_data, task="task1")
+    train_loader2, val_loader2 = create_dataloader(args.batch_size, args.batch_size, img_size=args.img_size, use_full_data=args.full_data, task="task2")
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     
     best_score1 = best_score2 = 0
@@ -132,7 +114,7 @@ def main():
             torch.save(model.state_dict(), f"{log_dir}/best2.pth")
 
     print(f"Finish training. Best task1 score: {best_score1}. Best task2 score: {best_score2}.")
-    training_log.write(f"Finish training. Best task1 score: {best_score1}. Best task2 score: {best_score2}\n")
+    training_log.write(f"Finish training. Best task1 score: {best_score1}. Best task2 score: {best_score2}.\n")
     
     training_log.close()
 

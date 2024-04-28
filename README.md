@@ -1,34 +1,32 @@
-# DIP
+# CGI-HRDC 2023
 
-This repo is for the first task of [CGI-HRDC 2023 - Hypertensive Retinopathy Diagnosis Challenge](https://codalab.lisn.upsaclay.fr/competitions/11877#learn_the_details-terms_and_conditions)
+This repo is for the two tasks of [CGI-HRDC 2023 - Hypertensive Retinopathy Diagnosis Challenge](https://codalab.lisn.upsaclay.fr/competitions/11877#learn_the_details-terms_and_conditions)
 
-## Introduction
+## Result
 
-Hypertensive retinopathy (HR) refers to retinal damage caused by high blood pressure. Elevated blood pressure initially causes changes in the retina, causing spasmodic constriction of the retinal arteries. If the blood pressure is controlled in time during this period, the damage to the blood vessels is reversible. However, the analysis of hypertensive retinopathy is limited by the manual inspection process of image by image, which is time-consuming and relies heavily on the experience of ophthalmologists. Therefore, an effective computer-aided system is essential to help ophthalmologists analyze the progression of disease.
+### Task1
+| Kappa      | F1         | Specificity | Average    | CPU Time    |
+|------------|------------|-------------|------------|-------------|
+| 0.4306 (1) | 0.6772 (4) | 0.8333 (5)  | 0.6470 (1) | 0.6889 (25) |
 
-In order to promote the application of machine learning and deep learning algorithms in computer-aided automatic clinical hypertensive retinopathy diagnosis, we organize the hypertensive retinopathy diagnosis challenge. With this dataset, various algorithms can test their performance and make a fair comparison with other algorithms.
-
-Task 1 is hypertension classification. Given a fundus image of a patient's eye, the task is to confirm whether this patient suffers from hypertension. Category 0 represents no hypertension and category 1 represents hypertension. This is a two-class classification task.
-
-The backbone of our model is ResNet34. Since the given dataset is quite small, we utilized several augmentation methods and introduced SimCLR, a contrastive learning method to pretrain our model. The testing result of our implementation is shown below:
-
-| Kappa | F1 | Specificity | Average | CPU Time |
-| --- | --- | --- | --- | --- |
-| 0.3472 (6) | 0.6270 (8) | 0.7986 (2) | 0.5909 (5) | 0.1071 (8) |
+### Task2
+| Kappa      | F1         | Specificity | Average    | CPU Time    |
+|------------|------------|-------------|------------|-------------|
+| 0.4029 (6) | 0.5576 (14) | 0.9389 (3)  | 0.6331 (3) | 0.5978 (28) |
 
 ## Installation
 
 Start by clone the repo:
 
 ```bash
-git clone https://github.com/etherwindy/DIP
-cd DIP
+git clone https://github.com/Stillwtm/CGI-HRDC-2023.git
+cd CGI-HRDC-2023
 ```
 Create conda environment:
 
 ```bash
 conda env create -f environment.yaml
-conda activate dip
+conda activate CGI-HRDC-2023
 ```
 
 ## Training
@@ -45,24 +43,24 @@ dataset/
 └── label_task2.csv
 ```
 
-Then you can run the training script with the following command, and change different models and hyperparameters:
+Then you can run the first-stage training script with the following command, and change different models and hyperparameters:
 
 ```bash
-python main.py [-h] [-m {resnet18,resnet34,resnet50,efficientnet,densenet,convnext,vit}] [-s IMG_SIZE] [-b BATCH_SIZE]
+python main.py [-m {resnet18,resnet34,resnet50,efficientnet,densenet,convnext,vit}] [-s IMG_SIZE] [-b BATCH_SIZE] [-f]
+```
+
+After training, you have the option to select a specific task, load the optimal checkpoint, and proceed with second-stage fine-tuning:
+
+```bash
+python finetune.py [-m {resnet18,resnet34,resnet50,efficientnet,densenet,convnext,vit}] [-s IMG_SIZE] [-b BATCH_SIZE] [-f] [-p MODEL_PATH] [-t {task1,task2}]
 ```
 
 ## Test
 
-We utilize model ensemble in our implementation, so before proceeding, you need to move the trained models you want to use to `submit/models` folder:
+We utilize model ensemble in our implementation, so before proceeding, you need to move the trained models you want to use to `submit/models` folder, for example:
 
 ```bash
-cp output/<model name>_<batch_size>/best<task id>.pth submit/models/<model name>.pth
-```
-
-For example:
-
-```bash
-cp output/densenet_512_twohead/best1.pth submit/models/densenet.pth
+cp output/convnext_512_False_finetune_task2/epoch_4.pth submit/models/convnext.pth
 ```
 
 Then set the task you want to evaluate on and the model name you want to ensemble in `submit/model.py`. For example:
@@ -81,5 +79,5 @@ python test.py -i <image dir path> -o <output csv file>
 For example:
 
 ```bash
-python test.py -i ./dataset/image/ -o ./test.csv
+python test.py -i ./dataset/image_task1/ -o ./test.csv
 ```
