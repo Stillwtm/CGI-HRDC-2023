@@ -26,7 +26,7 @@ Create conda environment:
 
 ```bash
 conda env create -f environment.yaml
-conda activate CGI-HRDC-2023
+conda activate hrdc2023
 ```
 
 ## Training

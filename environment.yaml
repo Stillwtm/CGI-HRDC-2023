@@ -1,4 +1,4 @@
-name: myenv
+name: hrdc2023
 channels:
   - pytorch
   - nvidia
